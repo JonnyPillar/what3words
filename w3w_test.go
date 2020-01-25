@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	w3w "github.com/jonnypillar/what3words"
+	"github.com/jonnypillar/what3words/internal/api"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +26,7 @@ func TestGetCoordinates(t *testing.T) {
 		apiStatusCode int
 
 		expectedAPIURL string
-		expectedCoords *w3w.Coordinates
+		expectedCoords *w3w.Result
 		expectedErr    error
 	}{
 		{
@@ -33,7 +34,7 @@ func TestGetCoordinates(t *testing.T) {
 			apiKey: apiKey,
 			words:  w3w.Words{"one", "two", "three"},
 
-			apiResponse: w3w.Response{
+			apiResponse: w3w.Result{
 				Coordinates: struct {
 					Lng float64 "json:\"lng\""
 					Lat float64 "json:\"lat\""
@@ -45,9 +46,11 @@ func TestGetCoordinates(t *testing.T) {
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-coordinates?format=json&key=foobar&words=one.two.three",
-			expectedCoords: &w3w.Coordinates{
-				Lat: 1,
-				Lng: 2,
+			expectedCoords: &w3w.Result{
+				Coordinates: w3w.Coords{
+					Lat: 1,
+					Lng: 2,
+				},
 			},
 		},
 		{
@@ -60,7 +63,7 @@ func TestGetCoordinates(t *testing.T) {
 			apiKey: apiKey,
 			words:  w3w.Words{"one", "two", "three"},
 
-			apiResponse: w3w.ErrorResponse{
+			apiResponse: api.ErrorResponse{
 				Err: struct {
 					Code    string `json:"code"`
 					Message string `json:"message"`
@@ -118,7 +121,7 @@ func TestGetWords(t *testing.T) {
 		apiStatusCode int
 
 		expectedAPIURL string
-		expectedWords  *w3w.Words
+		expectedWords  *w3w.Result
 		expectedErr    error
 	}{
 		{
@@ -129,13 +132,16 @@ func TestGetWords(t *testing.T) {
 				Lng: -0.348023,
 			},
 
-			apiResponse: w3w.Response{
+			apiResponse: w3w.Result{
 				Words: "one.two.three",
 			},
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&key=foobar",
-			expectedWords:  &w3w.Words{"one", "two", "three"},
+			expectedWords: &w3w.Result{
+				// "one", "two", "three"
+				Words: "one.two.three",
+			},
 		},
 		{
 			desc: "given an invalid API Key is set, error returned",
@@ -150,7 +156,7 @@ func TestGetWords(t *testing.T) {
 				Lng: -0.348023,
 			},
 
-			apiResponse: w3w.ErrorResponse{
+			apiResponse: api.ErrorResponse{
 				Err: struct {
 					Code    string `json:"code"`
 					Message string `json:"message"`

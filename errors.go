@@ -2,14 +2,13 @@ package w3w
 
 import "fmt"
 
-// ErrorResponse ...
-type ErrorResponse struct {
-	Err struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
+// Error ...
+type Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
-func (w ErrorResponse) Error() string {
-	return fmt.Sprintf("%s: %s", w.Err.Code, w.Err.Message)
+// Error ...
+func (w Error) Error() string {
+	return fmt.Sprintf("%s: %s", w.Code, w.Message)
 }

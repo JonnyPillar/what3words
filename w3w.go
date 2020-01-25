@@ -1,12 +1,11 @@
 package w3w
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"strings"
+
+	"github.com/jonnypillar/what3words/internal/api"
 )
 
 const (
@@ -31,130 +30,85 @@ func New(apiKey string) *Client {
 }
 
 // GetCoordinates ...
-func (c Client) GetCoordinates(req *Words, options *Options) (*Coordinates, error) {
+func (c Client) GetCoordinates(req *Words, options *Options) (*Result, error) {
 	url, err := c.coordinatesURL(req, options)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Get(url)
+	resp, err := api.Get(url)
 	if err != nil {
+		var apiErr api.ErrorResponse
+
+		if errors.As(err, &apiErr) {
+			return nil, Error{
+				Code:    apiErr.Err.Code,
+				Message: apiErr.Err.Message,
+			}
+		}
+
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var cResp ErrorResponse
-		json.Unmarshal(body, &cResp)
-
-		return nil, cResp
-	}
-
-	var cResp Response
-	json.Unmarshal(body, &cResp)
-
-	return &Coordinates{
-		Lat: cResp.Coordinates.Lat,
-		Lng: cResp.Coordinates.Lng,
-	}, nil
+	return newResponse(resp), nil
 }
 
 // GetWords ...
-func (c Client) GetWords(req *Coordinates, options *Options) (*Words, error) {
+func (c Client) GetWords(req *Coordinates, options *Options) (*Result, error) {
 	url, err := c.wordsURL(req, options)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Get(url)
+	resp, err := api.Get(url)
 	if err != nil {
+		var apiErr api.ErrorResponse
+
+		if errors.As(err, &apiErr) {
+			return nil, Error{
+				Code:    apiErr.Err.Code,
+				Message: apiErr.Err.Message,
+			}
+		}
+
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var cResp ErrorResponse
-		json.Unmarshal(body, &cResp)
-
-		return nil, cResp
-	}
-
-	var wResp Response
-	json.Unmarshal(body, &wResp)
-
-	words := strings.Split(wResp.Words, wordsDelimiter)
-
-	w := Words{}
-	copy(w[:], words[:3])
-
-	return &w, nil
+	return newResponse(resp), nil
 }
 
 func (c Client) coordinatesURL(req *Words, options *Options) (string, error) {
-	baseURL, err := url.Parse(
-		fmt.Sprintf("%s/%s", options.APIURL, convertToCoordinatesRoute),
-	)
+	url, err := api.NewURL(c.key, options.APIURL, convertToCoordinatesRoute)
 	if err != nil {
-		return "", fmt.Errorf("invalid w3w API URL")
+		return "", err
 	}
 
-	params := url.Values{}
-
-	if c.key == "" {
-		return "", fmt.Errorf("invalid api key")
-	}
-
-	params.Add("key", c.key)
-	params.Add("words", strings.Join(req[:], wordsDelimiter))
+	url.AddParam("words", strings.Join(req[:], wordsDelimiter))
 
 	switch options.Format {
 	case formatGeoJSON:
-		params.Add("format", formatGeoJSON)
+		url.AddParam("format", formatGeoJSON)
 	default:
-		params.Add("format", formatJSON)
+		url.AddParam("format", formatJSON)
 	}
 
-	baseURL.RawQuery = params.Encode()
-
-	return baseURL.String(), nil
+	return url.URL(), nil
 }
 
 func (c Client) wordsURL(req *Coordinates, options *Options) (string, error) {
-	baseURL, err := url.Parse(
-		fmt.Sprintf("%s/%s", options.APIURL, convertToWordsRoute),
-	)
+	url, err := api.NewURL(c.key, options.APIURL, convertToWordsRoute)
 	if err != nil {
-		return "", fmt.Errorf("invalid w3w API URL")
+		return "", err
 	}
 
-	params := url.Values{}
-
-	if c.key == "" {
-		return "", fmt.Errorf("invalid api key")
-	}
-
-	params.Add("key", c.key)
-
-	params.Add("coordinates", fmt.Sprintf("%f,%f", req.Lat, req.Lng))
+	url.AddParam("coordinates", fmt.Sprintf("%f,%f", req.Lat, req.Lng))
 
 	// switch options.Format {
 	// case formatGeoJSON:
-	// 	params.Add("format", formatGeoJSON)
+	// 	url.AddParam("format", formatGeoJSON)
 	// default:
-	// 	params.Add("format", formatJSON)
+	// 	url.AddParam("format", formatJSON)
 	// }
 
-	baseURL.RawQuery = params.Encode()
-
-	return baseURL.String(), nil
+	return url.URL(), nil
 }
