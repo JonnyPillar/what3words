@@ -24,4 +24,4 @@ jobs:
       run: go build -v ./pkg/w3w/.
     
     - name: Test
-      run: go test . -cover
+      run: go test ./... -cover
