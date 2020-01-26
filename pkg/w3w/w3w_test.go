@@ -60,7 +60,7 @@ func TestGetCoordinates(t *testing.T) {
 		apiStatusCode int
 
 		expectedAPIURL string
-		expectedCoords *w3w.Result
+		expectedCoords w3w.Result
 		expectedErr    error
 	}{
 		{
@@ -80,7 +80,7 @@ func TestGetCoordinates(t *testing.T) {
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-coordinates?format=json&key=foobar&words=one.two.three",
-			expectedCoords: &w3w.Result{
+			expectedCoords: w3w.Result{
 				Coordinates: w3w.Coords{
 					Lat: 1,
 					Lng: 2,
@@ -119,7 +119,7 @@ func TestGetCoordinates(t *testing.T) {
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-coordinates?format=geojson&key=foobar&words=one.two.three",
-			expectedCoords: &w3w.Result{
+			expectedCoords: w3w.Result{
 				Coordinates: w3w.Coords{
 					Lat: 1,
 					Lng: 2,
@@ -169,7 +169,7 @@ func TestGetCoordinates(t *testing.T) {
 
 			coords, err := c.GetCoordinates(
 				tt.words,
-				&w3w.CoordinateOptions{
+				w3w.CoordinateOptions{
 					APIURL: s.URL,
 					Format: tt.format,
 				},
@@ -198,7 +198,7 @@ func TestGetWords(t *testing.T) {
 		apiStatusCode int
 
 		expectedAPIURL string
-		expectedWords  *w3w.Result
+		expectedWords  w3w.Result
 		expectedErr    error
 	}{
 		{
@@ -215,7 +215,7 @@ func TestGetWords(t *testing.T) {
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=json&key=foobar",
-			expectedWords: &w3w.Result{
+			expectedWords: w3w.Result{
 				Words: "one.two.three",
 			},
 		},
@@ -234,7 +234,7 @@ func TestGetWords(t *testing.T) {
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=json&key=foobar&language=en",
-			expectedWords: &w3w.Result{
+			expectedWords: w3w.Result{
 				Words: "one.two.three",
 			},
 		},
@@ -253,7 +253,7 @@ func TestGetWords(t *testing.T) {
 			apiStatusCode: http.StatusOK,
 
 			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=geojson&key=foobar",
-			expectedWords: &w3w.Result{
+			expectedWords: w3w.Result{
 				Words: "one.two.three",
 			},
 		},
@@ -298,7 +298,7 @@ func TestGetWords(t *testing.T) {
 
 			words, err := c.GetWords(
 				tt.coords,
-				&w3w.WordOptions{
+				w3w.WordOptions{
 					APIURL:   s.URL,
 					Language: tt.language,
 					Format:   tt.format,

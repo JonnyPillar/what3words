@@ -16,7 +16,7 @@ func main() {
 	res, err := c.GetWords(w3w.Coordinates{
 		Lat: 51.432393,
 		Lng: -0.348023,
-	}, &w3w.WordOptions{})
+	}, w3w.WordOptions{})
 
 	if err != nil {
 		fmt.Println("Error occurred converting coordinates to words", err)

@@ -44,10 +44,10 @@ func New(key string) (*Client, error) {
 
 // GetCoordinates converts a 3 word address into a Longitude and Latitude along with the country,
 // the bounds of the grid square, a nearby place and a link to the W3W site
-func (c Client) GetCoordinates(req Words, options *CoordinateOptions) (*Result, error) {
+func (c Client) GetCoordinates(req Words, options CoordinateOptions) (Result, error) {
 	url, err := c.coordinatesURL(req, options)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
 
 	resp, err := api.Get(url)
@@ -55,10 +55,10 @@ func (c Client) GetCoordinates(req Words, options *CoordinateOptions) (*Result, 
 		var apiErr api.ErrorResponse
 
 		if errors.As(err, &apiErr) {
-			return nil, newResponseError(apiErr)
+			return Result{}, newResponseError(apiErr)
 		}
 
-		return nil, err
+		return Result{}, err
 	}
 
 	return newResponse(resp), nil
@@ -66,10 +66,10 @@ func (c Client) GetCoordinates(req Words, options *CoordinateOptions) (*Result, 
 
 // GetWords converts a Longitude and Latitude into a 3 word address along with the country,
 // the bounds of the grid square, a nearby place and a link to the W3W site
-func (c Client) GetWords(req Coordinates, opts *WordOptions) (*Result, error) {
+func (c Client) GetWords(req Coordinates, opts WordOptions) (Result, error) {
 	url, err := c.wordsURL(req, opts)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
 
 	resp, err := api.Get(url)
@@ -77,16 +77,16 @@ func (c Client) GetWords(req Coordinates, opts *WordOptions) (*Result, error) {
 		var apiErr api.ErrorResponse
 
 		if errors.As(err, &apiErr) {
-			return nil, newResponseError(apiErr)
+			return Result{}, newResponseError(apiErr)
 		}
 
-		return nil, err
+		return Result{}, err
 	}
 
 	return newResponse(resp), nil
 }
 
-func (c Client) coordinatesURL(req Words, opts *CoordinateOptions) (string, error) {
+func (c Client) coordinatesURL(req Words, opts CoordinateOptions) (string, error) {
 	url, err := api.NewURL(c.key, opts.APIURL, convertToCoordinatesRoute)
 	if err != nil {
 		return "", err
@@ -109,7 +109,7 @@ func (c Client) coordinatesURL(req Words, opts *CoordinateOptions) (string, erro
 	return url.URL(), nil
 }
 
-func (c Client) wordsURL(req Coordinates, opts *WordOptions) (string, error) {
+func (c Client) wordsURL(req Coordinates, opts WordOptions) (string, error) {
 	url, err := api.NewURL(c.key, opts.APIURL, convertToWordsRoute)
 	if err != nil {
 		return "", err
