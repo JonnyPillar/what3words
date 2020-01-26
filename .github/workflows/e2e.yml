@@ -23,4 +23,4 @@ jobs:
     - name: Test
       env:
         W3W_INTEGRATION_API_KEY: ${{ secrets.W3W_INTEGRATION_API_KEY }}
-      run: go test ./tests/e2e/. -cover -tags=e2e
+      run: go test ./tests/e2e/. -cover -tags=e2e -v
