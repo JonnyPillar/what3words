@@ -34,7 +34,7 @@ func TestGetCoordinates(t *testing.T) {
 			apiKey: apiKey,
 			words:  w3w.Words{"one", "two", "three"},
 
-			apiResponse: w3w.Result{
+			apiResponse: api.Response{
 				Coordinates: struct {
 					Lng float64 "json:\"lng\""
 					Lat float64 "json:\"lat\""
@@ -132,7 +132,7 @@ func TestGetWords(t *testing.T) {
 				Lng: -0.348023,
 			},
 
-			apiResponse: w3w.Result{
+			apiResponse: api.Response{
 				Words: "one.two.three",
 			},
 			apiStatusCode: http.StatusOK,
