@@ -13,13 +13,47 @@ import (
 )
 
 const (
-	apiKey = "foobar"
+	apiKey        = "foobar"
+	enLanguage    = "en"
+	geoJSONFormat = "geojson"
 )
+
+func TestNewClient(t *testing.T) {
+	testCases := []struct {
+		desc   string
+		apiKey string
+
+		expectedErr error
+	}{
+		{
+			desc:   "given a valid API key, initialised client returned",
+			apiKey: apiKey,
+		},
+		{
+			desc: "given an empty API key, error returned",
+
+			expectedErr: w3w.ErrNoAPIKey,
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.desc, func(t *testing.T) {
+			_, err := w3w.New(tt.apiKey)
+
+			if tt.expectedErr != nil {
+				assert.NotNil(t, err)
+				assert.EqualError(t, tt.expectedErr, err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
 
 func TestGetCoordinates(t *testing.T) {
 	tests := []struct {
 		desc   string
 		apiKey string
+		format string
 		words  w3w.Words
 
 		apiResponse   interface{}
@@ -54,9 +88,43 @@ func TestGetCoordinates(t *testing.T) {
 			},
 		},
 		{
-			desc: "given an invalid API Key is set, error returned",
+			desc:   "given words have not been set, error returned",
+			apiKey: apiKey,
+			words:  w3w.Words{},
 
-			expectedErr: fmt.Errorf("invalid api key"),
+			expectedErr: w3w.ErrEmptyWord,
+		},
+		{
+			desc:   "given a word is empty, error returned",
+			apiKey: apiKey,
+			words:  w3w.Words{"one", "", "three"},
+
+			expectedErr: w3w.ErrEmptyWord,
+		},
+		{
+			desc:   "given words with getjson format option, request made with format option set & words returned",
+			apiKey: apiKey,
+			format: geoJSONFormat,
+			words:  w3w.Words{"one", "two", "three"},
+
+			apiResponse: api.Response{
+				Coordinates: struct {
+					Lng float64 "json:\"lng\""
+					Lat float64 "json:\"lat\""
+				}{
+					Lat: 1,
+					Lng: 2,
+				},
+			},
+			apiStatusCode: http.StatusOK,
+
+			expectedAPIURL: "/convert-to-coordinates?format=geojson&key=foobar&words=one.two.three",
+			expectedCoords: &w3w.Result{
+				Coordinates: w3w.Coords{
+					Lat: 1,
+					Lng: 2,
+				},
+			},
 		},
 		{
 			desc:   "given the W3W API returns an error, error returned",
@@ -82,7 +150,11 @@ func TestGetCoordinates(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			s := testServer(func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, tt.expectedAPIURL, r.URL.String())
+				if tt.expectedAPIURL != "" {
+					assert.Equal(t, tt.expectedAPIURL, r.URL.String())
+				} else {
+					return
+				}
 
 				b, _ := json.Marshal(tt.apiResponse)
 
@@ -92,11 +164,14 @@ func TestGetCoordinates(t *testing.T) {
 
 			defer s.Close()
 
-			c := w3w.New(tt.apiKey)
+			c, err := w3w.New(tt.apiKey)
+			assert.Nil(t, err)
+
 			coords, err := c.GetCoordinates(
-				&tt.words,
-				&w3w.Options{
+				tt.words,
+				&w3w.CoordinateOptions{
 					APIURL: s.URL,
+					Format: tt.format,
 				},
 			)
 
@@ -113,9 +188,11 @@ func TestGetCoordinates(t *testing.T) {
 
 func TestGetWords(t *testing.T) {
 	tests := []struct {
-		desc   string
-		apiKey string
-		coords w3w.Coordinates
+		desc     string
+		apiKey   string
+		language string
+		format   string
+		coords   w3w.Coordinates
 
 		apiResponse   interface{}
 		apiStatusCode int
@@ -137,16 +214,48 @@ func TestGetWords(t *testing.T) {
 			},
 			apiStatusCode: http.StatusOK,
 
-			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&key=foobar",
+			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=json&key=foobar",
 			expectedWords: &w3w.Result{
-				// "one", "two", "three"
 				Words: "one.two.three",
 			},
 		},
 		{
-			desc: "given an invalid API Key is set, error returned",
+			desc:     "given a coordinates with language option, request made with language option set & words returned",
+			apiKey:   apiKey,
+			language: enLanguage,
+			coords: w3w.Coordinates{
+				Lat: 51.432393,
+				Lng: -0.348023,
+			},
 
-			expectedErr: fmt.Errorf("invalid api key"),
+			apiResponse: api.Response{
+				Words: "one.two.three",
+			},
+			apiStatusCode: http.StatusOK,
+
+			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=json&key=foobar&language=en",
+			expectedWords: &w3w.Result{
+				Words: "one.two.three",
+			},
+		},
+		{
+			desc:   "given a coordinates with getjson format option, request made with format option set & words returned",
+			apiKey: apiKey,
+			format: geoJSONFormat,
+			coords: w3w.Coordinates{
+				Lat: 51.432393,
+				Lng: -0.348023,
+			},
+
+			apiResponse: api.Response{
+				Words: "one.two.three",
+			},
+			apiStatusCode: http.StatusOK,
+
+			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=geojson&key=foobar",
+			expectedWords: &w3w.Result{
+				Words: "one.two.three",
+			},
 		},
 		{
 			desc:   "given the W3W API returns an error, error returned",
@@ -167,7 +276,7 @@ func TestGetWords(t *testing.T) {
 			},
 			apiStatusCode: http.StatusBadRequest,
 
-			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&key=foobar",
+			expectedAPIURL: "/convert-to-3wa?coordinates=51.432393%2C-0.348023&format=json&key=foobar",
 			expectedErr:    fmt.Errorf("BadCoordinates: coordinates must be two comma separated lat,lng coordinates"),
 		},
 	}
@@ -184,12 +293,15 @@ func TestGetWords(t *testing.T) {
 			})
 			defer s.Close()
 
-			c := w3w.New(tt.apiKey)
+			c, err := w3w.New(tt.apiKey)
+			assert.Nil(t, err)
 
 			words, err := c.GetWords(
-				&tt.coords,
-				&w3w.Options{
-					APIURL: s.URL,
+				tt.coords,
+				&w3w.WordOptions{
+					APIURL:   s.URL,
+					Language: tt.language,
+					Format:   tt.format,
 				},
 			)
 

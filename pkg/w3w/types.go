@@ -11,12 +11,6 @@ type Coordinates struct {
 	Lng float64
 }
 
-// Options ...
-type Options struct {
-	APIURL string
-	Format string
-}
-
 // Result defines a W3W result
 type Result struct {
 	Country      string `json:"country"`
