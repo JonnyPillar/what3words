@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	w3w "github.com/jonnypillar/what3words"
+	"github.com/jonnypillar/what3words/pkg/w3w"
 )
 
 func main() {

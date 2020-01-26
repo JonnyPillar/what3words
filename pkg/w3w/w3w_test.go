@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	w3w "github.com/jonnypillar/what3words"
 	"github.com/jonnypillar/what3words/internal/api"
+	"github.com/jonnypillar/what3words/pkg/w3w"
 	"github.com/stretchr/testify/assert"
 )
 
