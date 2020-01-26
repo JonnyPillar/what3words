@@ -15,22 +15,36 @@ const (
 
 	formatJSON    = "json"
 	formatGeoJSON = "geojson"
+
+	paramWords       = "words"
+	paramCoordinates = "coordinates"
+	paramFormat      = "format"
+	paramLanguage    = "language"
 )
 
-// Client ...
+// Client defines the W3W Client
 type Client struct {
 	key string
 }
 
-// New ...
-func New(apiKey string) *Client {
-	return &Client{
-		key: apiKey,
+// New initalises a new Client instance
+// The `key` parameter sets the API Key used to authenticate against W3W APIs.
+// For information on how to get this value see https://accounts.what3words.com/en/account/developer
+//
+// If no API Key is provided, ErrNoAPIKey is returned
+func New(key string) (*Client, error) {
+	if key == "" || strings.TrimSpace(key) == "" {
+		return nil, ErrNoAPIKey
 	}
+
+	return &Client{
+		key: key,
+	}, nil
 }
 
-// GetCoordinates ...
-func (c Client) GetCoordinates(req *Words, options *Options) (*Result, error) {
+// GetCoordinates converts a 3 word address into a Longitude and Latitude along with the country,
+// the bounds of the grid square, a nearby place and a link to the W3W site
+func (c Client) GetCoordinates(req Words, options *CoordinateOptions) (*Result, error) {
 	url, err := c.coordinatesURL(req, options)
 	if err != nil {
 		return nil, err
@@ -41,10 +55,7 @@ func (c Client) GetCoordinates(req *Words, options *Options) (*Result, error) {
 		var apiErr api.ErrorResponse
 
 		if errors.As(err, &apiErr) {
-			return nil, Error{
-				Code:    apiErr.Err.Code,
-				Message: apiErr.Err.Message,
-			}
+			return nil, newResponseError(apiErr)
 		}
 
 		return nil, err
@@ -53,9 +64,10 @@ func (c Client) GetCoordinates(req *Words, options *Options) (*Result, error) {
 	return newResponse(resp), nil
 }
 
-// GetWords ...
-func (c Client) GetWords(req *Coordinates, options *Options) (*Result, error) {
-	url, err := c.wordsURL(req, options)
+// GetWords converts a Longitude and Latitude into a 3 word address along with the country,
+// the bounds of the grid square, a nearby place and a link to the W3W site
+func (c Client) GetWords(req Coordinates, opts *WordOptions) (*Result, error) {
+	url, err := c.wordsURL(req, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -65,10 +77,7 @@ func (c Client) GetWords(req *Coordinates, options *Options) (*Result, error) {
 		var apiErr api.ErrorResponse
 
 		if errors.As(err, &apiErr) {
-			return nil, Error{
-				Code:    apiErr.Err.Code,
-				Message: apiErr.Err.Message,
-			}
+			return nil, newResponseError(apiErr)
 		}
 
 		return nil, err
@@ -77,38 +86,59 @@ func (c Client) GetWords(req *Coordinates, options *Options) (*Result, error) {
 	return newResponse(resp), nil
 }
 
-func (c Client) coordinatesURL(req *Words, options *Options) (string, error) {
-	url, err := api.NewURL(c.key, options.APIURL, convertToCoordinatesRoute)
+func (c Client) coordinatesURL(req Words, opts *CoordinateOptions) (string, error) {
+	url, err := api.NewURL(c.key, opts.APIURL, convertToCoordinatesRoute)
 	if err != nil {
 		return "", err
 	}
 
-	url.AddParam("words", strings.Join(req[:], wordsDelimiter))
+	err = validateWordParam(req)
+	if err != nil {
+		return "", err
+	}
 
-	switch options.Format {
+	url.AddParam(paramWords, strings.Join(req[:], wordsDelimiter))
+
+	switch opts.Format {
 	case formatGeoJSON:
-		url.AddParam("format", formatGeoJSON)
+		url.AddParam(paramFormat, formatGeoJSON)
 	default:
-		url.AddParam("format", formatJSON)
+		url.AddParam(paramFormat, formatJSON)
 	}
 
 	return url.URL(), nil
 }
 
-func (c Client) wordsURL(req *Coordinates, options *Options) (string, error) {
-	url, err := api.NewURL(c.key, options.APIURL, convertToWordsRoute)
+func (c Client) wordsURL(req Coordinates, opts *WordOptions) (string, error) {
+	url, err := api.NewURL(c.key, opts.APIURL, convertToWordsRoute)
 	if err != nil {
 		return "", err
 	}
 
-	url.AddParam("coordinates", fmt.Sprintf("%f,%f", req.Lat, req.Lng))
+	url.AddParam(paramCoordinates, fmt.Sprintf("%f,%f", req.Lat, req.Lng))
 
-	// switch options.Format {
-	// case formatGeoJSON:
-	// 	url.AddParam("format", formatGeoJSON)
-	// default:
-	// 	url.AddParam("format", formatJSON)
-	// }
+	if opts.Language != "" {
+		url.AddParam(paramLanguage, opts.Language)
+	}
+
+	switch opts.Format {
+	case formatGeoJSON:
+		url.AddParam(paramFormat, formatGeoJSON)
+	default:
+		url.AddParam(paramFormat, formatJSON)
+	}
 
 	return url.URL(), nil
+}
+
+func validateWordParam(req Words) error {
+	var count int
+	for _, word := range req {
+		if word == "" || strings.TrimSpace(word) == "" {
+			return ErrEmptyWord
+		}
+		count++
+	}
+
+	return nil
 }

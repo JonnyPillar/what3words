@@ -11,9 +11,13 @@ import (
 func main() {
 	apiKey := os.Getenv("W3W_API_KEY")
 
-	c := w3w.New(apiKey)
+	c, _ := w3w.New(apiKey)
 
-	res, err := c.GetCoordinates(&w3w.Words{"filled", "count"}, &w3w.Options{})
+	res, err := c.GetCoordinates(w3w.Words{
+		"filled",
+		"count",
+		"soap",
+	}, &w3w.CoordinateOptions{})
 
 	if err != nil {
 		fmt.Println("Error occurred converting words to coordinates", err)
