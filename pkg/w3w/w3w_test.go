@@ -169,7 +169,7 @@ func TestGetCoordinates(t *testing.T) {
 
 			coords, err := c.GetCoordinates(
 				tt.words,
-				&w3w.CoordinateOptions{
+				w3w.CoordinateOptions{
 					APIURL: s.URL,
 					Format: tt.format,
 				},
@@ -298,7 +298,7 @@ func TestGetWords(t *testing.T) {
 
 			words, err := c.GetWords(
 				tt.coords,
-				&w3w.WordOptions{
+				w3w.WordOptions{
 					APIURL:   s.URL,
 					Language: tt.language,
 					Format:   tt.format,

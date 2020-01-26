@@ -17,7 +17,7 @@ func main() {
 		"filled",
 		"count",
 		"soap",
-	}, &w3w.CoordinateOptions{})
+	}, w3w.CoordinateOptions{})
 
 	if err != nil {
 		fmt.Println("Error occurred converting words to coordinates", err)

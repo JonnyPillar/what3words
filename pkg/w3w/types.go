@@ -46,8 +46,8 @@ type Coords struct {
 	Lat float64 `json:"lat"`
 }
 
-func newResponse(r *api.Response) *Result {
-	return &Result{
+func newResponse(r *api.Response) Result {
+	return Result{
 		Country: r.Country,
 		Square: Square{
 			Southwest: r.Square.Southwest,
